@@ -1,0 +1,12 @@
+From models:
+TO MODEL:
+- BTCond
+- BTNextGen
+- BTSettl
+- Castelli_Kurucz
+- PHOENIX
+- PHOENIXv2
+
+TO PLOT:
+- PHOENIX
+- PHOENIXv2
