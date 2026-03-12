@@ -1,9 +1,6 @@
 """Error handling module."""
-import logging
 import sys
 import traceback
-
-logger = logging.getLogger(__name__)
 
 
 class Error(Exception):
@@ -23,8 +20,10 @@ class Error(Exception):
         sys.exit()
 
     def warn(self):
-        """Log error message."""
-        logger.error('%s: %s', self, self.message)
+        """Print error message."""
+        print('An exception was caught!', end=': ')
+        print(self, end='\nError message: ')
+        print(self.message)
 
     def log(self, out):
         """Log the error."""
@@ -139,34 +138,35 @@ class CatalogWarning(Error):
     def __init__(self, par, type):
         self.errorname = 'CatalogWarning'
         if type == 0:
-            if par == 'masked':
-                self.message = 'Gaia DR3 parallax is masked (no astrometric solution)'
-            else:
-                self.message = 'Gaia DR3 parallax is non-positive: ' + str(par)
+            self.message = 'Invalid parallax found (plx <= 0)'
         if type == 1:
-            self.message = 'Gaia DR3 parameter "' + str(par) + '" not found -- skipping'
+            self.message = 'Parameter ' + par + ' not found! Be advised.'
         if type == 2:
-            self.message = 'Magnitude ' + str(par) + ' not found in catalog -- skipping'
+            self.message = par + ' magnitude not found! Skipping.'
         if type == 3:
-            self.message = 'No uncertainty for ' + str(par) + ' -- assigning default error'
+            self.message = par + ' magnitude error not found, assigning error.'
         if type == 4:
-            self.message = 'Zero uncertainty for ' + str(par) + ' -- assigning default error'
+            self.message = par + ' magnitude error is 0, assigning error.'
         if type == 5:
-            self.message = 'Star not found in catalog ' + str(par) + ' -- skipping'
+            self.message = 'Star is not available in catalog ' + par
+            self.message += '. Skipping'
         if type == 6:
-            self.message = 'Filter ' + str(par) + ' already retrieved -- skipping duplicate'
+            self.message = par + ' magnitude already retrieved. Skipping.'
         if type == 7:
-            self.message = 'Catalog ' + str(par) + ' skipped (user-requested)'
+            self.message = 'Catalog ' + par + ' manually skipped!'
         if type == 8:
-            self.message = ('Catalog ' + str(par)
-                            + ': entry rejected (extended source, bad quality, or contaminated)')
+            self.message = 'Catalog ' + par + ' entry is either an extended'
+            self.message += ' source, is of bad quality or is contaminated.'
+            self.message += ' Skipping.'
         if type == 9:
             self.message = 'Unable to find distance in Bailer-Jones Gaia EDR3!'
             self.message += ' Calculating from Parallax instead.'
 
     def warn(self):
-        """Log warning message."""
-        logger.warning('%s', self.message)
+        """Print error message."""
+        print('Warning!', end=': ')
+        print(self, end='\nWarning message: ')
+        print(self.message)
 
 
 class DynestyError(Error):
@@ -204,9 +204,13 @@ class StarWarning(Error):
             self.message += 'Reverting back to the SFD map!'
 
     def warn(self):
-        logger.warning('%s', self.message)
+        print('Star Warning ! ! !')
+        print(self.message)
 
     def __raise__(self):
-        """Raise an exception and log the error message."""
-        logger.error('%s', self.message)
-        sys.exit()
+        """Raise an exception and print the error message."""
+        try:
+            raise self
+        except Error:
+            print('Star Error ! ! !')
+            sys.exit()

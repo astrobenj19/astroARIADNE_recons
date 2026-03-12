@@ -103,7 +103,7 @@ def get_zero_flux(band):
     # Load photometry filter library
     filt = pyphot.get_library()[band]
     # Get Vega zero flux in erg / cm2 / s / um
-    f0 = filt.Vega_zero_flux.to('erg/(um * cm ** 2 * s)').magnitude
+    f0 = filt.Vega_zero_flux.to('erg/(um * cm ** 2 * s)').value
     return f0
 
 
@@ -112,7 +112,7 @@ def get_effective_wavelength(band):
     # Load photometry filter library
     filt = pyphot.get_library()[band]
     # Get central wavelength in um
-    leff = filt.cl.to('um').magnitude
+    leff = filt.cl.to('um').value
     return leff
 
 
@@ -121,7 +121,7 @@ def get_bandpass(band):
     # Load photometry filter library
     filt = pyphot.get_library()[band]
     # Get lower and upper bandpass in um
-    width = filt.width.to('um').magnitude
+    width = filt.width.to('um').value
     bp = width
     return bp / 2
 

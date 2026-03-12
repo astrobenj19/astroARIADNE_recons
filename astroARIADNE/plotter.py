@@ -3,11 +3,8 @@
 __all__ = ['SEDPlotter']
 
 import glob
-import logging
 import pickle
 from random import choice
-
-logger = logging.getLogger(__name__)
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -33,6 +30,23 @@ from .phot_utils import *
 from .sed_library import *
 from .utils import *
 
+# PLOT STYLE
+plt.style.use('seaborn-v0_8-whitegrid')  # Seaborn whitegrid style
+
+# PLOT COLORS
+plt.style.use('seaborn-v0_8-colorblind')  # Seaborn colorblind palette
+
+#import mplcyberpunk
+#plt.style.use("cyberpunk")
+
+#'''
+from matplotlib.font_manager import FontProperties
+from matplotlib import font_manager
+path_barlow = '/Users/sebas_astrogsu/Downloads/Barlow/Barlow-Medium.ttf'
+# Load the font and make it global
+font_manager.fontManager.addfont(path_barlow)
+plt.rcParams['font.family'] = 'Barlow'
+#'''
 
 class SEDPlotter:
     """Artist class for all things SED.
@@ -371,7 +385,7 @@ class SEDPlotter:
     def plot_SED(self):
         """Create the plot of the SED."""
         if self.moddir is None:
-            logger.warning('Models directory not provided, skipping SED plot')
+            print('Models directory not provided, skipping SED plot.')
             return
         print('Plotting SED')
         # Get plot ylims.
