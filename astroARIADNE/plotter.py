@@ -30,23 +30,15 @@ from .phot_utils import *
 from .sed_library import *
 from .utils import *
 
-# PLOT STYLE
-plt.style.use('seaborn-v0_8-whitegrid')  # Seaborn whitegrid style
+# Set plotting style and font globally for all plots in this module
 
-# PLOT COLORS
-plt.style.use('seaborn-v0_8-colorblind')  # Seaborn colorblind palette
-
-#import mplcyberpunk
-#plt.style.use("cyberpunk")
-
-#'''
-from matplotlib.font_manager import FontProperties
+#import matplotlib.pyplot as plt
 from matplotlib import font_manager
+
+# Set custom font (Barlow)
 path_barlow = '/Users/sebas_astrogsu/Downloads/Barlow/Barlow-Medium.ttf'
-# Load the font and make it global
 font_manager.fontManager.addfont(path_barlow)
 plt.rcParams['font.family'] = 'Barlow'
-#'''
 
 class SEDPlotter:
     """Artist class for all things SED.
@@ -120,6 +112,7 @@ class SEDPlotter:
         """See class docstring."""
         print('\nInitializing plotter.\n')
         # General setup
+        
         self.pdf = pdf
         png = True if not pdf else False
         self.png = png
@@ -313,7 +306,7 @@ class SEDPlotter:
         ymin = (self.flux * self.wave).min()
         ymax = (self.flux * self.wave).max()
 
-        f, ax = plt.subplots(figsize=self.figsize)
+        f, ax = plt.subplots(figsize=self.figsize, dpi=self.dpi)
 
         # Model plot
         used_f = self.star.filter_names[self.star.filter_mask]
@@ -355,7 +348,7 @@ class SEDPlotter:
         ax.set_yscale('log', nonpositive='clip')
         ax.set_ylabel(r'$\lambda$F$_\lambda$ (erg cm$^{-2}$s$^{-1}$)',
                       fontsize=self.fontsize,
-                      fontname=self.fontname
+                      fontname='Barlow'
                       )
         ax.legend(loc=0)
 
@@ -369,10 +362,10 @@ class SEDPlotter:
         )
         ax.set_xticks(np.linspace(1, 10, 10))
         ax.get_xaxis().set_major_formatter(ticker.ScalarFormatter())
-        ax.set_xlim([0.1, 6])
+        ax.set_xlim([0.125, 8])
 
         for tick in ax.get_yticklabels():
-            tick.set_fontname(self.fontname)
+            tick.set_fontname('Barlow')
 
         if self.pdf:
             plt.savefig(self.out_folder + '/SED_no_model.pdf',
@@ -494,15 +487,15 @@ class SEDPlotter:
         ax_r.set_xscale('log', nonpositive='clip')
         ax_r.set_xlabel(r'$\lambda (\mu m)$',
                         fontsize=self.fontsize,
-                        fontname=self.fontname
+                        fontname='Barlow'
                         )
         ax.set_ylabel(r'$\lambda$F$_\lambda$ (erg cm$^{-2}$s$^{-1}$)',
                       fontsize=self.fontsize,
-                      fontname=self.fontname
+                      fontname='Barlow'
                       )
         ax_r.set_ylabel('Residuals\n$(\\sigma)$',
                         fontsize=self.fontsize,
-                        fontname=self.fontname
+                        fontname='Barlow'
                         )
 
         ax.tick_params(
@@ -529,8 +522,8 @@ class SEDPlotter:
         ax_r.yaxis.set_minor_locator(ylocmin)
         ax_r.yaxis.set_minor_formatter(ticker.NullFormatter())
 
-        xlims1 = [0.125, 6]
-        xlims2 = [0.25, 6]
+        xlims1 = [0.125, 7.5]
+        xlims2 = [0.25, 7.5]
         if self.irx:
             xlims1 = [0.125, 250]
             xlims2 = [0.25, 250]
@@ -549,11 +542,11 @@ class SEDPlotter:
         ax.set_xticklabels(empty_string_labels)
 
         for tick in ax.get_yticklabels():
-            tick.set_fontname(self.fontname)
+            tick.set_fontname('Barlow')
         for tick in ax_r.get_yticklabels():
-            tick.set_fontname(self.fontname)
+            tick.set_fontname('Barlow')
         for tick in ax_r.get_xticklabels():
-            tick.set_fontname(self.fontname)
+            tick.set_fontname('Barlow')
 
         if self.pdf:
             plt.savefig(f'{self.out_folder}/SED.pdf', bbox_inches='tight')
@@ -728,16 +721,16 @@ class SEDPlotter:
         samples = self.out['posterior_samples']
         for i, param in enumerate(self.order):
             if not self.coordinator[i]:
-                f, ax = plt.subplots(figsize=(12, 4))
+                f, ax = plt.subplots(figsize=(6, 3))
                 ax.step(range(len(samples[param])), samples[param],
                         color='k', alpha=0.8)
                 ax.set_ylabel(param,
                               fontsize=self.fontsize,
-                              fontname=self.fontname
+                              fontname='Barlow'
                               )
                 ax.set_xlabel('Steps',
                               fontsize=self.fontsize,
-                              fontname=self.fontname
+                              fontname='Barlow'
                               )
                 best = self.out['best_fit'][param]
                 # ax.axhline(np.median(samples[param]), color='red', lw=2)
@@ -756,18 +749,18 @@ class SEDPlotter:
         samples = self.out['posterior_samples']
         for i, param in enumerate(self.order):
             if not self.coordinator[i]:
-                f, ax = plt.subplots(figsize=(12, 4))
+                f, ax = plt.subplots(figsize=(6, 3))
                 ax.scatter(samples[param], samples['loglike'], alpha=0.5, s=40)
                 best = self.out['best_fit'][param]
                 # ax.axvline(np.median(samples[param]), color='red', lw=1.5)
                 ax.axvline(best, color='red', lw=1.5)
                 ax.set_ylabel('log likelihood',
                               fontsize=self.fontsize,
-                              fontname=self.fontname
+                              fontname='Barlow'
                               )
                 ax.set_xlabel(param,
                               fontsize=self.fontsize,
-                              fontname=self.fontname
+                              fontname='Barlow'
                               )
                 ax.tick_params(
                     axis='both', which='major',
@@ -790,7 +783,7 @@ class SEDPlotter:
         samples = self.out['posterior_samples']
         for i, param in enumerate(self.order):
             if not self.coordinator[i]:
-                f, ax = plt.subplots(figsize=(12, 4))
+                f, ax = plt.subplots(figsize=(6, 3))
                 ax.scatter(samples[param], samples['posteriors'], alpha=0.5,
                            s=40)
                 best = self.out['best_fit'][param]
@@ -798,11 +791,11 @@ class SEDPlotter:
                 ax.axvline(best, color='red', lw=1.5)
                 ax.set_ylabel('log posterior',
                               fontsize=self.fontsize,
-                              fontname=self.fontname
+                              fontname='Barlow'
                               )
                 ax.set_xlabel(param,
                               fontsize=self.fontsize,
-                              fontname=self.fontname
+                              fontname='Barlow'
                               )
                 ax.tick_params(
                     axis='both', which='major',
@@ -900,29 +893,29 @@ class SEDPlotter:
                 # Normal
                 ax1.set_ylabel('PDF',
                                fontsize=self.fontsize,
-                               fontname=self.fontname
+                               fontname='Barlow'
                                )
                 # Weighted
                 ax2.set_ylabel('N',
                                fontsize=self.fontsize,
-                               fontname=self.fontname
+                               fontname='Barlow'
                                )
                 axes = [ax1, ax2]
                 for ax in axes:
                     ax.set_xlabel(lab,
                                   fontsize=self.fontsize,
-                                  fontname=self.fontname
+                                  fontname='Barlow'
                                   )
                     for tick in ax.get_yticklabels():
-                        tick.set_fontname(self.fontname)
+                        tick.set_fontname('Barlow')
                     for tick in ax.get_xticklabels():
-                        tick.set_fontname(self.fontname)
+                        tick.set_fontname('Barlow')
 
                     ax.tick_params(
                         axis='both', which='major',
                         labelsize=self.tick_labelsize
                     )
-                    ax.legend(loc=0, prop={'size': 16})
+                    ax.legend(loc=0, prop={'size': 9})
 
                 if param == 'z':
                     param = 'Fe_H'
@@ -941,7 +934,7 @@ class SEDPlotter:
 
         if self.bma:
             # Age hist
-            f, ax = plt.subplots(figsize=(12, 4))
+            f, ax = plt.subplots(figsize=(6, 3))
             samp = self.out['mist_samples']['age']
             n, bins, patches = ax.hist(
                 samp, alpha=.3, bins=20, label='MIST', density=True
@@ -951,21 +944,21 @@ class SEDPlotter:
             ax.plot(xx, kde(xx), color='k', lw=2, alpha=.7)
             ax.set_ylabel('PDF',
                           fontsize=self.fontsize,
-                          fontname=self.fontname)
+                          fontname='Barlow')
             ax.set_xlabel('Age',
                           fontsize=self.fontsize,
-                          fontname=self.fontname)
+                          fontname='Barlow')
 
             for tick in ax.get_yticklabels():
-                tick.set_fontname(self.fontname)
+                tick.set_fontname('Barlow')
             for tick in ax.get_xticklabels():
-                tick.set_fontname(self.fontname)
+                tick.set_fontname('Barlow')
 
             ax.tick_params(
                 axis='both', which='major',
                 labelsize=self.tick_labelsize
             )
-            plt.legend(loc=0)
+            plt.legend(loc=0, prop={'size': 9})
             if self.png:
                 plt.savefig(self.hist_out + '/age.png',
                             bbox_inches='tight')
@@ -974,7 +967,7 @@ class SEDPlotter:
                             bbox_inches='tight')
             plt.close(f)
             # Mass hist
-            f, ax = plt.subplots(figsize=(12, 4))
+            f, ax = plt.subplots(figsize=(6, 3))
             samp = self.out['mist_samples']['iso_mass']
             n, bins, patches = ax.hist(
                 samp, alpha=.3, bins=20, label='MIST', density=True
@@ -984,21 +977,21 @@ class SEDPlotter:
             ax.plot(xx, kde(xx), color='k', lw=2, alpha=.7)
             ax.set_ylabel('PDF',
                           fontsize=self.fontsize,
-                          fontname=self.fontname)
+                          fontname='Barlow')
             ax.set_xlabel('Mass',
                           fontsize=self.fontsize,
-                          fontname=self.fontname)
+                          fontname='Barlow')
 
             for tick in ax.get_yticklabels():
-                tick.set_fontname(self.fontname)
+                tick.set_fontname('Barlow')
             for tick in ax.get_xticklabels():
-                tick.set_fontname(self.fontname)
+                tick.set_fontname('Barlow')
 
             ax.tick_params(
                 axis='both', which='major',
                 labelsize=self.tick_labelsize
             )
-            plt.legend(loc=0)
+            plt.legend(loc=0, prop={'size': 9})
             if self.png:
                 plt.savefig(self.hist_out + '/iso_mass.png',
                             bbox_inches='tight')
@@ -1007,7 +1000,7 @@ class SEDPlotter:
                             bbox_inches='tight')
             plt.close(f)
             # EEP hist
-            f, ax = plt.subplots(figsize=(12, 4))
+            f, ax = plt.subplots(figsize=(6, 3))
             samp = self.out['mist_samples']['eep']
             n, bins, patches = ax.hist(
                 samp, alpha=.3, bins=20, label='MIST', density=True
@@ -1017,21 +1010,21 @@ class SEDPlotter:
             ax.plot(xx, kde(xx), color='k', lw=2, alpha=.7)
             ax.set_ylabel('PDF',
                           fontsize=self.fontsize,
-                          fontname=self.fontname)
+                          fontname='Barlow')
             ax.set_xlabel('EEP',
                           fontsize=self.fontsize,
-                          fontname=self.fontname)
+                          fontname='Barlow')
 
             for tick in ax.get_yticklabels():
-                tick.set_fontname(self.fontname)
+                tick.set_fontname('Barlow')
             for tick in ax.get_xticklabels():
-                tick.set_fontname(self.fontname)
+                tick.set_fontname('Barlow')
 
             ax.tick_params(
                 axis='both', which='major',
                 labelsize=self.tick_labelsize
             )
-            plt.legend(loc=0)
+            plt.legend(loc=0, prop={'size': 9})
             if self.png:
                 plt.savefig(self.hist_out + '/EEP.png',
                             bbox_inches='tight')
@@ -1083,7 +1076,7 @@ class SEDPlotter:
         cbar.set_label(r'$M_\odot$',
                        rotation=270,
                        fontsize=self.fontsize,
-                       fontname=self.fontname,
+                       fontname='Barlow',
                        labelpad=20)
 
         for i in range(nsamp):
@@ -1106,10 +1099,10 @@ class SEDPlotter:
         ax.invert_xaxis()
         ax.set_xlabel('logTeff',
                       fontsize=self.fontsize,
-                      fontname=self.fontname)
+                      fontname='Barlow')
         ax.set_ylabel('logL',
                       fontsize=self.fontsize,
-                      fontname=self.fontname)
+                      fontname='Barlow')
         ax.tick_params(
             axis='both', which='major',
             labelsize=self.tick_labelsize
@@ -1117,9 +1110,9 @@ class SEDPlotter:
         for ll in cbar.ax.yaxis.get_ticklabels():
             ll.set_fontsize(self.tick_labelsize)
         for tick in ax.get_yticklabels():
-            tick.set_fontname(self.fontname)
+            tick.set_fontname('Barlow')
         for tick in ax.get_yticklabels():
-            tick.set_fontname(self.fontname)
+            tick.set_fontname('Barlow')
 
         if self.png:
             plt.savefig(self.out_folder + '/HR_diagram.png',
@@ -1180,7 +1173,7 @@ class SEDPlotter:
             t = titles[i]
 
             ax.set_title(t, fontsize=self.corner_fontsize,
-                         fontname=self.fontname)
+                         fontname='Barlow')
 
         for yi in range(theta.shape[0]):
             for xi in range(yi):
@@ -1188,22 +1181,22 @@ class SEDPlotter:
                 if xi == 0:
                     for tick in ax.yaxis.get_major_ticks():
                         tick.label1.set_fontsize(self.corner_tick_fontsize)
-                        tick.label1.set_fontname(self.fontname)
+                        tick.label1.set_fontname('Barlow')
                         ax.set_ylabel(
                             labels[yi],
                             labelpad=self.corner_labelpad,
                             fontsize=self.corner_fontsize,
-                            fontname=self.fontname
+                            fontname='Barlow'
                         )
                 if yi == theta.shape[0] - 1:
                     for tick in ax.xaxis.get_major_ticks():
                         tick.label1.set_fontsize(self.corner_tick_fontsize)
-                        tick.label1.set_fontname(self.fontname)
+                        tick.label1.set_fontname('Barlow')
                         ax.set_xlabel(
                             labels[xi],
                             labelpad=self.corner_labelpad,
                             fontsize=self.corner_fontsize,
-                            fontname=self.fontname
+                            fontname='Barlow'
                         )
                 ax.axvline(theta[xi], color=self.corner_med_c,
                            linestyle=self.corner_med_style)
@@ -1214,11 +1207,11 @@ class SEDPlotter:
                 labels[-1],
                 labelpad=self.corner_labelpad,
                 fontsize=self.corner_fontsize,
-                fontname=self.fontname
+                fontname='Barlow'
             )
             for tick in axes[-1, -1].xaxis.get_major_ticks():
                 tick.label1.set_fontsize(self.corner_tick_fontsize)
-                tick.label1.set_fontname(self.fontname)
+                tick.label1.set_fontname('Barlow')
 
             if self.pdf:
                 plt.savefig(f'{self.out_folder}/CORNER.pdf',

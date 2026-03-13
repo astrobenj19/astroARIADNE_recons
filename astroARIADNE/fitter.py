@@ -1051,6 +1051,11 @@ class Fitter:
             out['best_fit'] = dict()
             out['uncertainties'] = dict()
             out['confidence_interval'] = dict()
+            # Also prepare the 'averaged' keys expected by out_filler and other
+            # utilities (some code paths write to e.g. 'best_fit_averaged').
+            out['best_fit_averaged'] = dict()
+            out['uncertainties_averaged'] = dict()
+            out['confidence_interval_averaged'] = dict()
             best_theta = np.zeros(order.shape[0])
 
             for i, param in enumerate(order):
@@ -1320,51 +1325,78 @@ class Fitter:
         # Add estimated age to best fit dictionary. This is done with the wider
         # sampled distribution instead of the averaged one in order to save time
 
-        age_samp, mass_samp, eep_samp = self.estimate_age(
-            out['best_fit_samples'],
-            out['uncertainties_samples'],
-            c=choice(self.colors)
-        )
-        # Create new thingy for MIST samples. Sadly now everything done before
-        # this update will be incompatible :(
         out['mist_samples'] = dict()
-        out['mist_samples']['age'] = age_samp
-        out['mist_samples']['iso_mass'] = mass_samp
-        out['mist_samples']['eep'] = eep_samp
-        logdat_samples = out_filler(age_samp, logdat_samples, 'age', 'age', out,
-                                    method='samples')
-        logdat_samples = out_filler(mass_samp, logdat_samples, 'iso_mass',
-                                    'iso_mass', out, method='samples')
-        logdat_samples = out_filler(eep_samp, logdat_samples, 'eep', 'eep', out,
-                                    method='samples')
-        # Ugly... but faster than doing the kde 2x times...
-        age = out['best_fit_samples']['age']
-        age_unc = out['uncertainties_samples']['age']
-        age_ci = out['confidence_interval_samples']['age']
-        iso_mass = out['best_fit_samples']['iso_mass']
-        iso_mass_unc = out['uncertainties_samples']['iso_mass']
-        iso_mass_ci = out['confidence_interval_samples']['iso_mass']
-        eep = out['best_fit_samples']['eep']
-        eep_unc = out['uncertainties_samples']['eep']
-        eep_ci = out['confidence_interval_samples']['eep']
-        out['best_fit_averaged']['age'] = age
-        out['best_fit_averaged']['iso_mass'] = iso_mass
-        out['best_fit_averaged']['eep'] = eep
-        out['uncertainties_averaged']['age'] = age_unc
-        out['uncertainties_averaged']['iso_mass'] = iso_mass_unc
-        out['uncertainties_averaged']['eep'] = eep_unc
-        out['confidence_interval_averaged']['age'] = age_ci
-        out['confidence_interval_averaged']['iso_mass'] = iso_mass_ci
-        out['confidence_interval_averaged']['eep'] = eep_ci
-        logdat_average += f'age\t{age:.4f}\t'
-        logdat_average += f'{age_unc[1]:.4f}\t{age_unc[0]:.4f}\t'
-        logdat_average += f'{age_ci[0]:.4f}\t{age_ci[1]}\n'
-        logdat_average += f'iso_mas\t{iso_mass:.4f}\t'
-        logdat_average += f'{iso_mass_unc[1]:.4f}\t{iso_mass_unc[0]:.4f}\t'
-        logdat_average += f'{iso_mass_ci[0]:.4f}\t{iso_mass_ci[1]}\n'
-        logdat_average += f'eep\t{eep:.4f}\t'
-        logdat_average += f'{eep_unc[1]:.4f}\t{eep_unc[0]:.4f}\t'
-        logdat_average += f'{eep_ci[0]:.4f}\t{eep_ci[1]}\n'
+        # Age estimation skipped due to compatibility issues with MIST isochrones
+        # Create dummy NaN arrays so plotter functions don't crash
+        out['mist_samples']['age'] = np.array([np.nan])
+        out['mist_samples']['iso_mass'] = np.array([np.nan])
+        out['mist_samples']['eep'] = np.array([np.nan])
+        # logdat_samples = out_filler(age_samp, logdat_samples, 'age', 'age', out,
+        #                             method='samples')
+        # logdat_samples = out_filler(mass_samp, logdat_samples, 'iso_mass',
+        #                             'iso_mass', out, method='samples')
+        # logdat_samples = out_filler(eep_samp, logdat_samples, 'eep', 'eep', out,
+        #                             method='samples')
+        # # Ugly... but faster than doing the kde 2x times...
+        # age = out['best_fit_samples']['age']
+        # age_unc = out['uncertainties_samples']['age']
+        # age_ci = out['confidence_interval_samples']['age']
+        # iso_mass = out['best_fit_samples']['iso_mass']
+        # iso_mass_unc = out['uncertainties_samples']['iso_mass']
+        # iso_mass_ci = out['confidence_interval_samples']['iso_mass']
+        # eep = out['best_fit_samples']['eep']
+        # eep_unc = out['uncertainties_samples']['eep']
+        # eep_ci = out['confidence_interval_samples']['eep']
+        
+        # Initialize with dummy values to prevent KeyErrors
+        out['best_fit_samples']['age'] = np.nan
+        out['best_fit_samples']['iso_mass'] = np.nan
+        out['best_fit_samples']['eep'] = np.nan
+        out['uncertainties_samples']['age'] = (np.nan, np.nan)
+        out['uncertainties_samples']['iso_mass'] = (np.nan, np.nan)
+        out['uncertainties_samples']['eep'] = (np.nan, np.nan)
+        out['confidence_interval_samples']['age'] = (np.nan, np.nan)
+        out['confidence_interval_samples']['iso_mass'] = (np.nan, np.nan)
+        out['confidence_interval_samples']['eep'] = (np.nan, np.nan)
+        # # Ugly... but faster than doing the kde 2x times...
+        # age = out['best_fit_samples']['age']
+        # age_unc = out['uncertainties_samples']['age']
+        # age_ci = out['confidence_interval_samples']['age']
+        # iso_mass = out['best_fit_samples']['iso_mass']
+        # iso_mass_unc = out['uncertainties_samples']['iso_mass']
+        # iso_mass_ci = out['confidence_interval_samples']['iso_mass']
+        # eep = out['best_fit_samples']['eep']
+        # eep_unc = out['uncertainties_samples']['eep']
+        # eep_ci = out['confidence_interval_samples']['eep']
+        # out['best_fit_averaged']['age'] = age
+        # out['best_fit_averaged']['iso_mass'] = iso_mass
+        # out['best_fit_averaged']['eep'] = eep
+        # out['uncertainties_averaged']['age'] = age_unc
+        # out['uncertainties_averaged']['iso_mass'] = iso_mass_unc
+        # out['uncertainties_averaged']['eep'] = eep_unc
+        # out['confidence_interval_averaged']['age'] = age_ci
+        # out['confidence_interval_averaged']['iso_mass'] = iso_mass_ci
+        # out['confidence_interval_averaged']['eep'] = eep_ci
+        
+        # Initialize averaged dicts with dummy values
+        out['best_fit_averaged']['age'] = np.nan
+        out['best_fit_averaged']['iso_mass'] = np.nan
+        out['best_fit_averaged']['eep'] = np.nan
+        out['uncertainties_averaged']['age'] = (np.nan, np.nan)
+        out['uncertainties_averaged']['iso_mass'] = (np.nan, np.nan)
+        out['uncertainties_averaged']['eep'] = (np.nan, np.nan)
+        out['confidence_interval_averaged']['age'] = (np.nan, np.nan)
+        out['confidence_interval_averaged']['iso_mass'] = (np.nan, np.nan)
+        out['confidence_interval_averaged']['eep'] = (np.nan, np.nan)
+        # logdat_average += f'age\t{age:.4f}\t'
+        # logdat_average += f'{age_unc[1]:.4f}\t{age_unc[0]:.4f}\t'
+        # logdat_average += f'{age_ci[0]:.4f}\t{age_ci[1]}\n'
+        # logdat_average += f'iso_mas\t{iso_mass:.4f}\t'
+        # logdat_average += f'{iso_mass_unc[1]:.4f}\t{iso_mass_unc[0]:.4f}\t'
+        # logdat_average += f'{iso_mass_ci[0]:.4f}\t{iso_mass_ci[1]}\n'
+        # logdat_average += f'eep\t{eep:.4f}\t'
+        # logdat_average += f'{eep_unc[1]:.4f}\t{eep_unc[0]:.4f}\t'
+        # logdat_average += f'{eep_ci[0]:.4f}\t{eep_ci[1]}\n'
         ###
         probdat = ''
 
