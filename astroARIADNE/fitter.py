@@ -1169,9 +1169,9 @@ class Fitter:
         logdat_samples = '#Parameter\tmedian\tupper\tlower\t3sig_low\t3sig_up\n'
         logdat_average = '#Parameter\tmedian\tupper\tlower\t3sig_low\t3sig_up\n'
         log_out_samples = f'{self.out_folder}/best_fit_sample.dat'
-        log_out_average = f'{self.out_folder}/best_fit_average.dat'
-        prob_out = f'{self.out_folder}/model_probabilities.dat'
-        synth_out = f'{self.out_folder}/synthetic_fluxes.dat'
+        log_out_average = f'{self.out_folder}/a.{self.star.starname}.best_fit_average.dat'
+        prob_out = f'{self.out_folder}/a.{self.star.starname}.model_probabilities.dat'
+        synth_out = f'{self.out_folder}/a.{self.star.starname}.synthetic_fluxes.dat'
 
         # Save global evidence of each model.
         out['lnZ'] = avgd['evidences']

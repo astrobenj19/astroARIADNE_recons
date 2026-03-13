@@ -307,6 +307,7 @@ class SEDPlotter:
         ymax = (self.flux * self.wave).max()
 
         f, ax = plt.subplots(figsize=self.figsize, dpi=self.dpi)
+        ax.set_title(self.star.starname)
 
         # Model plot
         used_f = self.star.filter_names[self.star.filter_mask]
@@ -341,16 +342,18 @@ class SEDPlotter:
                        marker=self.marker,
                        c=c,
                        s=self.scatter_size,
-                       alpha=self.scatter_alpha, label=fi)
+                       alpha=self.scatter_alpha, label=fi, zorder=10)
 
         ax.set_ylim([ymin * .8, ymax * 1.25])
+        
         ax.set_xscale('log', nonpositive='clip')
         ax.set_yscale('log', nonpositive='clip')
-        ax.set_ylabel(r'$\lambda$F$_\lambda$ (erg cm$^{-2}$s$^{-1}$)',
+        ax.set_ylabel(r'$\lambda$F$_\lambda$ [erg cm$^{-2}$s$^{-1}$]',
                       fontsize=self.fontsize,
                       fontname='Barlow'
                       )
-        ax.legend(loc=0)
+        ax.set_xlabel(r'Wavelength [$\mu$]', fontsize=self.fontsize, fontname='Barlow')
+        ax.legend(loc='upper right', frameon=True, fontsize=8)
 
         ax.tick_params(
             axis='both', which='major',
@@ -362,16 +365,16 @@ class SEDPlotter:
         )
         ax.set_xticks(np.linspace(1, 10, 10))
         ax.get_xaxis().set_major_formatter(ticker.ScalarFormatter())
-        ax.set_xlim([0.125, 8])
+        ax.set_xlim([0.0, 10])
 
         for tick in ax.get_yticklabels():
             tick.set_fontname('Barlow')
 
         if self.pdf:
-            plt.savefig(self.out_folder + '/SED_no_model.pdf',
+            plt.savefig(f'{self.out_folder}/a.{self.star.starname}.SED_no_model.pdf',
                         bbox_inches='tight')
         if self.png:
-            plt.savefig(self.out_folder + '/SED_no_model.png',
+            plt.savefig(f'{self.out_folder}/a.{self.star.starname}.SED_no_model.png',
                         bbox_inches='tight')
         pass
 
@@ -414,6 +417,7 @@ class SEDPlotter:
         # Create plot layout
 
         f = plt.figure(figsize=self.figsize)
+        f.suptitle(self.star.starname)
         gs = GridSpec(2, 1, height_ratios=[3, 0.75], hspace=0.05)
 
         ax = f.add_subplot(gs[0])
@@ -549,12 +553,12 @@ class SEDPlotter:
             tick.set_fontname('Barlow')
 
         if self.pdf:
-            plt.savefig(f'{self.out_folder}/SED.pdf', bbox_inches='tight')
+            plt.savefig(f'{self.out_folder}/a.{self.star.starname}.SED.pdf', bbox_inches='tight')
         if self.png:
-            plt.savefig(f'{self.out_folder}/SED.png', bbox_inches='tight')
+            plt.savefig(f'{self.out_folder}/a.{self.star.starname}.SED.png', bbox_inches='tight')
         if self.save:
             data = np.vstack((self.wave, self.model * self.wave)).T
-            np.savetxt(f'{self.out_folder}/synthetic.dat', data, fmt='%s',
+            np.savetxt(f'{self.out_folder}/a.{self.star.starname}.synthetic.dat', data, fmt='%s',
                        header='wavelength(mu m) wave*flux(erg cm-2 s-2)')
         pass
 
@@ -712,7 +716,7 @@ class SEDPlotter:
             ax.plot(wave, flux, lw=1.25, color=self.model_color, zorder=0)
         if self.save:
             data = np.vstack((wave, flux)).T
-            np.savetxt(f'{self.out_folder}/SED.dat', data, fmt='%s',
+            np.savetxt(f'{self.out_folder}/a.{self.star.starname}.SED.dat', data, fmt='%s',
                        header='wavelength(mu m) wave*flux(erg cm-2 s-2)')
         pass
 
@@ -721,7 +725,8 @@ class SEDPlotter:
         samples = self.out['posterior_samples']
         for i, param in enumerate(self.order):
             if not self.coordinator[i]:
-                f, ax = plt.subplots(figsize=(6, 3))
+                f, ax = plt.subplots(figsize=(6, 3), dpi=self.dpi)
+                ax.set_title(self.star.starname)
                 ax.step(range(len(samples[param])), samples[param],
                         color='k', alpha=0.8)
                 ax.set_ylabel(param,
@@ -739,8 +744,8 @@ class SEDPlotter:
                     axis='both', which='major',
                     labelsize=self.tick_labelsize
                 )
-                plt.savefig(self.chain_out + '/' + param +
-                            '.png', bbox_inches='tight')
+                plt.savefig(f'{self.chain_out}/a.{self.star.starname}.{param}.png',
+                             bbox_inches='tight')
         plt.close('all')
         pass
 
@@ -749,7 +754,7 @@ class SEDPlotter:
         samples = self.out['posterior_samples']
         for i, param in enumerate(self.order):
             if not self.coordinator[i]:
-                f, ax = plt.subplots(figsize=(6, 3))
+                f, ax = plt.subplots(figsize=(6, 3), dpi=self.dpi)
                 ax.scatter(samples[param], samples['loglike'], alpha=0.5, s=40)
                 best = self.out['best_fit'][param]
                 # ax.axvline(np.median(samples[param]), color='red', lw=1.5)
@@ -766,7 +771,7 @@ class SEDPlotter:
                     axis='both', which='major',
                     labelsize=self.tick_labelsize
                 )
-                plt.savefig(self.like_out + '/' + param + '.png',
+                plt.savefig(f'{self.like_out}/a.{self.star.starname}.{param}.png',
                             bbox_inches='tight')
         plt.close('all')
         if self.engine == 'dynesty':
@@ -775,7 +780,7 @@ class SEDPlotter:
                 truths=self.theta,
                 show_titles=True, trace_cmap='plasma',
             )
-            plt.savefig(self.like_out + '/dynesty_trace.png')
+            plt.savefig(f'{self.like_out}/a.{self.star.starname}.dynesty_trace.png', bbox_inches='tight')
         pass
 
     def plot_post(self):
@@ -783,7 +788,7 @@ class SEDPlotter:
         samples = self.out['posterior_samples']
         for i, param in enumerate(self.order):
             if not self.coordinator[i]:
-                f, ax = plt.subplots(figsize=(6, 3))
+                f, ax = plt.subplots(figsize=(6, 3), dpi=self.dpi)
                 ax.scatter(samples[param], samples['posteriors'], alpha=0.5,
                            s=40)
                 best = self.out['best_fit'][param]
@@ -801,7 +806,7 @@ class SEDPlotter:
                     axis='both', which='major',
                     labelsize=self.tick_labelsize
                 )
-                plt.savefig(self.post_out + '/' + param + '.png',
+                plt.savefig(f'{self.post_out}/a.{self.star.starname}.{param}.png',
                             bbox_inches='tight')
         plt.close('all')
         pass
@@ -821,8 +826,8 @@ class SEDPlotter:
             if 'noise' in param:
                 continue
             if not self.coordinator[i]:
-                f1, ax1 = plt.subplots(figsize=(12, 6))
-                f2, ax2 = plt.subplots(figsize=(12, 6))
+                f1, ax1 = plt.subplots(figsize=(8, 4), dpi=self.dpi)
+                f2, ax2 = plt.subplots(figsize=(8, 4), dpi=self.dpi)
                 for j, m in enumerate(models):
                     # Get samples
                     samp = self.out['originals'][m][param]
@@ -920,21 +925,21 @@ class SEDPlotter:
                 if param == 'z':
                     param = 'Fe_H'
                 if self.png:
-                    f1.savefig(self.hist_out + '/' + param + '.png',
+                    f1.savefig(f'{self.hist_out}/a.{self.star.starname}.{param}.png',
                                bbox_inches='tight')
-                    f2.savefig(self.hist_out + '/weighted_' + param + '.png',
+                    f2.savefig(f'{self.hist_out}/a.{self.star.starname}.weighted_{param}.png',
                                bbox_inches='tight')
                 if self.pdf:
-                    f1.savefig(self.hist_out + '/' + param + '.pdf',
+                    f1.savefig(f'{self.hist_out}/a.{self.star.starname}.{param}.pdf',
                                bbox_inches='tight')
-                    f2.savefig(self.hist_out + '/weighted_' + param + '.pdf',
+                    f2.savefig(f'{self.hist_out}/a.{self.star.starname}.weighted_{param}.pdf',
                                bbox_inches='tight')
                 plt.close(f1)
                 plt.close(f2)
 
         if self.bma:
             # Age hist
-            f, ax = plt.subplots(figsize=(6, 3))
+            f, ax = plt.subplots(figsize=(6, 3), dpi=self.dpi)
             samp = self.out['mist_samples']['age']
             n, bins, patches = ax.hist(
                 samp, alpha=.3, bins=20, label='MIST', density=True
@@ -960,14 +965,14 @@ class SEDPlotter:
             )
             plt.legend(loc=0, prop={'size': 9})
             if self.png:
-                plt.savefig(self.hist_out + '/age.png',
+                plt.savefig(f'{self.hist_out}/a.{self.star.starname}.age.png',
                             bbox_inches='tight')
             if self.pdf:
-                plt.savefig(self.hist_out + '/age.pdf',
+                plt.savefig(f'{self.hist_out}/a.{self.star.starname}.age.pdf',
                             bbox_inches='tight')
             plt.close(f)
             # Mass hist
-            f, ax = plt.subplots(figsize=(6, 3))
+            f, ax = plt.subplots(figsize=(6, 3), dpi=self.dpi)
             samp = self.out['mist_samples']['iso_mass']
             n, bins, patches = ax.hist(
                 samp, alpha=.3, bins=20, label='MIST', density=True
@@ -993,14 +998,14 @@ class SEDPlotter:
             )
             plt.legend(loc=0, prop={'size': 9})
             if self.png:
-                plt.savefig(self.hist_out + '/iso_mass.png',
+                plt.savefig(f'{self.hist_out}/a.{self.star.starname}.iso_mass.png',
                             bbox_inches='tight')
             if self.pdf:
-                plt.savefig(self.hist_out + '/iso_mass.pdf',
+                plt.savefig(f'{self.hist_out}/a.{self.star.starname}.iso_mass.pdf',
                             bbox_inches='tight')
             plt.close(f)
             # EEP hist
-            f, ax = plt.subplots(figsize=(6, 3))
+            f, ax = plt.subplots(figsize=(6, 3), dpi=self.dpi)
             samp = self.out['mist_samples']['eep']
             n, bins, patches = ax.hist(
                 samp, alpha=.3, bins=20, label='MIST', density=True
@@ -1026,10 +1031,10 @@ class SEDPlotter:
             )
             plt.legend(loc=0, prop={'size': 9})
             if self.png:
-                plt.savefig(self.hist_out + '/EEP.png',
+                plt.savefig(f'{self.hist_out}/a.{self.star.starname}.EEP.png',
                             bbox_inches='tight')
             if self.pdf:
-                plt.savefig(self.hist_out + '/EEP.pdf',
+                plt.savefig(f'{self.hist_out}/a.{self.star.starname}.EEP.pdf',
                             bbox_inches='tight')
             plt.close(f)
 
@@ -1060,7 +1065,8 @@ class SEDPlotter:
         loglum = iso_bf['logL'].values
         mass = iso_bf['mass'].values
 
-        fig, ax = plt.subplots(figsize=self.hr_figsize)
+        fig, ax = plt.subplots(figsize=self.hr_figsize, dpi=self.dpi)
+        ax.set_title(self.star.starname)
 
         points = np.array([logteff, loglum]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
@@ -1115,10 +1121,10 @@ class SEDPlotter:
             tick.set_fontname('Barlow')
 
         if self.png:
-            plt.savefig(self.out_folder + '/HR_diagram.png',
+            plt.savefig(f'{self.out_folder}/a.{self.star.starname}.HR_diagram.png',
                         bbox_inches='tight')
         if self.pdf:
-            plt.savefig(self.out_folder + '/HR_diagram.pdf',
+            plt.savefig(f'{self.out_folder}/a.{self.star.starname}.HR_diagram.pdf',
                         bbox_inches='tight')
 
     def plot_corner(self):
@@ -1159,6 +1165,7 @@ class SEDPlotter:
             no_fill_contours=True,
             max_n_ticks=4
         )
+        fig.suptitle(self.star.starname, fontsize=self.corner_title_fontsize+10, fontname='Barlow')
 
         axes = np.array(fig.axes).reshape((theta.shape[0], theta.shape[0]))
 
@@ -1214,10 +1221,10 @@ class SEDPlotter:
                 tick.label1.set_fontname('Barlow')
 
             if self.pdf:
-                plt.savefig(f'{self.out_folder}/CORNER.pdf',
+                plt.savefig(f'{self.out_folder}/a.{self.star.starname}.CORNER.pdf',
                             bbox_inches='tight')
             if self.png:
-                plt.savefig(f'{self.out_folder}/CORNER.png',
+                plt.savefig(f'{self.out_folder}/a.{self.star.starname}CORNER.png',
                             bbox_inches='tight')
         pass
 
@@ -1333,11 +1340,11 @@ class SEDPlotter:
         sel_z = np.unique(self.star.z)[select_z]
         metal_add = ''
         if sel_z < 0:
-            metal_add = str(sel_z)
+            metal_add = 'm' + str(-sel_z).replace('.', '')
         if sel_z == 0:
-            metal_add = '-0.0'
+            metal_add = 'p00'
         if sel_z > 0:
-            metal_add = '+' + str(sel_z)
+            metal_add = 'p' + str(sel_z).replace('.', '')
         selected_SED = self.moddir + 'BTNextGen/AGSS2009/lte'
         selected_SED += str(sel_teff) if len(str(sel_teff)) == 3 else \
             '0' + str(sel_teff)
@@ -1376,11 +1383,13 @@ class SEDPlotter:
         sel_z = np.unique(self.star.z)[select_z]
         metal_add = ''
         if sel_z < 0:
-            metal_add = str(sel_z)
+            metal_add = 'm' + str(-sel_z).replace('.', '')
         if sel_z == 0:
-            metal_add = '-0.0'
+            metal_add = 'p00'
         if sel_z > 0:
-            metal_add = '+' + str(sel_z)
+            metal_add = 'p' + str(sel_z).replace('.', '')
+        name = 'bt' + metal_add
+        lgg = 'g{:.0f}'.format(sel_logg * 10)
         selected_SED = self.moddir + 'BTCond/CIFIST2011/lte'
         selected_SED += str(sel_teff) if len(str(sel_teff)) == 3 else \
             '0' + str(sel_teff)

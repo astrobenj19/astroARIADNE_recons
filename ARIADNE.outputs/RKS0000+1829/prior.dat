@@ -1,0 +1,7 @@
+Parameter	Prior	Values
+teff	default
+logg	default
+z	default
+dist	default
+rad	default
+Av	fixed	0.0
