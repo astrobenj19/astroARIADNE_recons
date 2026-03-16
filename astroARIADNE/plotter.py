@@ -35,8 +35,10 @@ from .utils import *
 #import matplotlib.pyplot as plt
 from matplotlib import font_manager
 
+from pathlib import Path
+
 # Set custom font (Barlow)
-path_barlow = '/Users/sebas_astrogsu/Downloads/Barlow/Barlow-Medium.ttf'
+path_barlow = str(Path(__file__).resolve().parent) + '/Datafiles/Barlow/Barlow-Medium.ttf' #'/Users/sebas_astrogsu/Downloads/Barlow/Barlow-Medium.ttf'
 font_manager.fontManager.addfont(path_barlow)
 plt.rcParams['font.family'] = 'Barlow'
 
