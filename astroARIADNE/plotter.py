@@ -352,7 +352,7 @@ class SEDPlotter:
                       fontsize=self.fontsize,
                       fontname='Barlow'
                       )
-        ax.set_xlabel(r'Wavelength [$\mu$]', fontsize=self.fontsize, fontname='Barlow')
+        ax.set_xlabel(r'Wavelength [$\mu$ m]', fontsize=self.fontsize, fontname='Barlow')
         ax.legend(loc='upper right', frameon=True, fontsize=8)
 
         ax.tick_params(
@@ -1165,7 +1165,7 @@ class SEDPlotter:
             no_fill_contours=True,
             max_n_ticks=4
         )
-        fig.suptitle(self.star.starname, fontsize=self.corner_title_fontsize+10, fontname='Barlow')
+        fig.suptitle(self.star.starname, fontsize=25, fontname='Barlow')
 
         axes = np.array(fig.axes).reshape((theta.shape[0], theta.shape[0]))
 
