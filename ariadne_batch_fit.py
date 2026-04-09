@@ -13,6 +13,7 @@ Example:
         --nlive 50 \\
         --n-samples 1000 \\
         --dlogz 0.999 \\
+        --threads 48 \\
         --plot-sed \\
         --plot-corner \\
         --num-targets 5
@@ -75,7 +76,7 @@ Examples:
 
   # With custom fitting parameters
   python ariadne_batch_fit.py --csv-path photometry.csv \\
-    --nlive 100 --n-samples 2000 --dlogz 0.995
+    --nlive 100 --n-samples 2000 --dlogz 0.995 --threads=1
 
   # With all plotting enabled
   python ariadne_batch_fit.py --csv-path photometry.csv \\
@@ -93,6 +94,12 @@ Examples:
     )
 
     # Fitting parameters
+    parser.add_argument(
+        "--threads",
+        type=int,
+        default=1,
+        help="Number of threads for dynesty (default: 1). Increase for better efficiency.",
+    )
     parser.add_argument(
         "--nlive",
         type=int,
@@ -241,7 +248,7 @@ def process_target(target, row, args):
     try:
         f = Fitter()
         f.star = s
-        f.setup = ["dynesty", args.nlive, args.dlogz, "multi", "rwalk", 1, False]
+        f.setup = ["dynesty", args.nlive, args.dlogz, "multi", "rwalk", args.threads, False]
         f.av_law = "fitzpatrick"
         f.out_folder = out_folder
         f.bma = True
@@ -263,6 +270,7 @@ def process_target(target, row, args):
         print(f"  n_samples: {args.n_samples}")
         print(f"  dlogz: {args.dlogz}")
         print(f"  models: {', '.join(args.models)}")
+        print(f"  threads: {args.threads}")
 
         # Run fitting
         print("\n[INFO] Initializing fitter...")
