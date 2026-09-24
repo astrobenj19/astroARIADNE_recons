@@ -223,7 +223,7 @@ def display_routine(engine, live_points, dlogz, ndim, bound=None, sample=None,
     pass
 
 
-def end(coordinator, elapsed_time, out_folder, engine, use_norm):
+def end(coordinator, elapsed_time, out_folder, engine, use_norm, starname=None):
     """Display end of run information.
 
     What is displayed is:
@@ -243,7 +243,7 @@ def end(coordinator, elapsed_time, out_folder, engine, use_norm):
             ['teff', 'logg', 'z', 'dist', 'rad', 'Av']
         )
     if engine == 'Bayesian Model Averaging':
-        res_dir = f'{out_folder}/BMA.pkl'
+        res_dir = f'{out_folder}/a.{starname}.BMA.pkl'
     else:
         res_dir = f'{out_folder}/{engine}_out.pkl'
     with closing(open(res_dir, 'rb')) as jar:

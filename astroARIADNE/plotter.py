@@ -300,7 +300,9 @@ class SEDPlotter:
         self.irx_bandpass = np.array(self.irx_bandpass).T
 
     def plot_SED_no_model(self, s=None):
-        """Plot raw photometry."""
+        """Plot raw photometry, per-band colored, with the best-fit model
+        spectrum and a residual panel (synthetic photometry shown as
+        diamonds in the same per-band colors as the observed points)."""
         if self.star is None:
             self.star = s
         self.__extract_info()
@@ -308,10 +310,6 @@ class SEDPlotter:
         ymin = (self.flux * self.wave).min()
         ymax = (self.flux * self.wave).max()
 
-        f, ax = plt.subplots(figsize=self.figsize, dpi=self.dpi)
-        ax.set_title(self.star.starname)
-
-        # Model plot
         used_f = self.star.filter_names[self.star.filter_mask]
         colors = np.array([
             'tomato', 'indianred', 'tab:red',
@@ -328,11 +326,52 @@ class SEDPlotter:
             'midnightblue', 'blue',
             'deeppink', 'fuchsia', 'mediumslateblue'
         ])
+        band_colors = colors[self.star.filter_mask]
 
-        for c, w, fl, fe, bp, fi in zip(
-                colors[self.star.filter_mask],
-                self.wave, self.flux, self.flux_er,
-                self.bandpass, used_f):
+        has_model = self.moddir is not None
+        if not has_model:
+            print('Models directory not provided, skipping model overlay '
+                  'and residuals.')
+
+        f = plt.figure(figsize=self.figsize, dpi=self.dpi)
+        f.suptitle(self.star.starname)
+        if has_model:
+            gs = GridSpec(2, 1, height_ratios=[3, 0.75], hspace=0.05)
+            ax = f.add_subplot(gs[0])
+            ax_r = f.add_subplot(gs[1])
+        else:
+            ax = f.add_subplot(111)
+
+        if has_model:
+            # Best-fit model spectrum (drawn first, underneath the points).
+            self.SED(ax)
+
+            # Residuals, computed the same way as plot_SED().
+            n_filt = self.star.used_filters.sum()
+            n_pars = int(len(self.theta) - n_filt)
+            mask = self.star.filter_mask
+            mags = self.star.mags[mask]
+            flxs = self.star.flux[mask]
+            errs = self.star.flux_er[mask]
+            filters = self.star.filter_names[mask]
+            wave = self.star.wave[mask]
+
+            for i, th in enumerate(self.theta[n_pars:]):
+                mag = mags[i]
+                filt = filters[i]
+                _, er = mag_to_flux(mag, th, filt)
+                self.theta[n_pars + i] = er
+
+            residuals, errors = get_residuals(
+                self.theta, flxs, errs, wave, filters, self.interpolator,
+                self.norm, self.av_law)
+            norm_res = residuals / errors
+
+        # Observed photometry (circles) and, if available, synthetic
+        # photometry (hollow diamonds), both colored per-band.
+        for i, (c, w, fl, fe, bp, fi) in enumerate(zip(
+                band_colors, self.wave, self.flux, self.flux_er,
+                self.bandpass, used_f)):
             ax.errorbar(w, fl * w,
                         xerr=bp, yerr=fe * w,
                         fmt='',
@@ -346,15 +385,20 @@ class SEDPlotter:
                        s=self.scatter_size,
                        alpha=self.scatter_alpha, label=fi, zorder=10)
 
+            if has_model:
+                ax.scatter(w, self.model[i] * w,
+                           marker=self.marker_model,
+                           edgecolors=c, facecolor='none',
+                           s=self.scatter_size, lw=3, zorder=11)
+
         ax.set_ylim([ymin * .8, ymax * 1.25])
-        
+
         ax.set_xscale('log', nonpositive='clip')
         ax.set_yscale('log', nonpositive='clip')
         ax.set_ylabel(r'$\lambda$F$_\lambda$ [erg cm$^{-2}$s$^{-1}$]',
                       fontsize=self.fontsize,
                       fontname='Barlow'
                       )
-        ax.set_xlabel(r'Wavelength [$\mu$ m]', fontsize=self.fontsize, fontname='Barlow')
         ax.legend(loc='upper right', frameon=True, fontsize=8)
 
         ax.tick_params(
@@ -367,10 +411,62 @@ class SEDPlotter:
         )
         ax.set_xticks(np.linspace(1, 10, 10))
         ax.get_xaxis().set_major_formatter(ticker.ScalarFormatter())
-        ax.set_xlim([0.0, 10])
+        if has_model:
+            # A lower bound of 0.0 is invalid on a log-scale axis; matplotlib
+            # silently substitutes different effective bounds per-axis based
+            # on each axis's own data range, which dephases ax and ax_r.
+            # Use the same real bounds on both, as plot_SED() does.
+            if 'GALEX_FUV' in self.star.filter_names[self.star.filter_mask] or \
+                    'GALEX_NUV' in self.star.filter_names[self.star.filter_mask]:
+                shared_xlim = [0.125, 7.5]
+            else:
+                shared_xlim = [0.25, 7.5]
+            ax.set_xlim(shared_xlim)
+        else:
+            ax.set_xlim([0.0, 10])
 
         for tick in ax.get_yticklabels():
             tick.set_fontname('Barlow')
+
+        if has_model:
+            # Residual panel, same per-band coloring as the SED panel.
+            ax_r.axhline(y=0, lw=2, ls='--', c='k', alpha=.7)
+            res_errs = np.array(self.flux_er) / errors
+            for c, w, r, bp, re in zip(band_colors, self.wave, norm_res,
+                                       self.bandpass, res_errs):
+                ax_r.errorbar(w, r, xerr=bp, yerr=re, zorder=3,
+                              fmt='', ecolor=c, marker=None)
+                ax_r.scatter(w, r, zorder=3, edgecolors='black',
+                            marker=self.marker, c=c, s=self.scatter_size,
+                            alpha=self.scatter_alpha)
+
+            res_std = norm_res.std()
+            ax_r.set_ylim([-5 * res_std, 5 * res_std])
+            ax_r.set_xscale('log', nonpositive='clip')
+            ax_r.set_xlabel(r'$\lambda (\mu m)$', fontsize=self.fontsize,
+                            fontname='Barlow')
+            ax_r.set_ylabel('Residuals\n$(\\sigma)$', fontsize=self.fontsize,
+                            fontname='Barlow')
+            ax_r.tick_params(
+                axis='both', which='major', labelsize=self.tick_labelsize
+            )
+            ax_r.set_xticks(np.linspace(1, 10, 10))
+            ax_r.get_xaxis().set_major_formatter(ticker.ScalarFormatter())
+            ax_r.set_xlim(shared_xlim)
+            ylocmin = ticker.LinearLocator(numticks=4)
+            ax_r.yaxis.set_minor_locator(ylocmin)
+            ax_r.yaxis.set_minor_formatter(ticker.NullFormatter())
+
+            labels = [item.get_text() for item in ax.get_xticklabels()]
+            ax.set_xticklabels([''] * len(labels))
+
+            for tick in ax_r.get_yticklabels():
+                tick.set_fontname('Barlow')
+            for tick in ax_r.get_xticklabels():
+                tick.set_fontname('Barlow')
+        else:
+            ax.set_xlabel(r'Wavelength [$\mu$ m]', fontsize=self.fontsize,
+                          fontname='Barlow')
 
         if self.pdf:
             plt.savefig(f'{self.out_folder}/a.{self.star.starname}.SED_no_model.pdf',
@@ -727,7 +823,7 @@ class SEDPlotter:
         samples = self.out['posterior_samples']
         for i, param in enumerate(self.order):
             if not self.coordinator[i]:
-                f, ax = plt.subplots(figsize=(6, 3), dpi=self.dpi)
+                f, ax = plt.subplots(figsize=(4.5, 3.25), dpi=self.dpi)
                 ax.set_title(self.star.starname)
                 ax.step(range(len(samples[param])), samples[param],
                         color='k', alpha=0.8)
@@ -828,8 +924,8 @@ class SEDPlotter:
             if 'noise' in param:
                 continue
             if not self.coordinator[i]:
-                f1, ax1 = plt.subplots(figsize=(8, 4), dpi=self.dpi)
-                f2, ax2 = plt.subplots(figsize=(8, 4), dpi=self.dpi)
+                f1, ax1 = plt.subplots(figsize=(4.5, 3.25), dpi=self.dpi)
+                f2, ax2 = plt.subplots(figsize=(4.5, 3.25), dpi=self.dpi)
                 for j, m in enumerate(models):
                     # Get samples
                     samp = self.out['originals'][m][param]
@@ -1226,7 +1322,7 @@ class SEDPlotter:
                 plt.savefig(f'{self.out_folder}/a.{self.star.starname}.CORNER.pdf',
                             bbox_inches='tight')
             if self.png:
-                plt.savefig(f'{self.out_folder}/a.{self.star.starname}CORNER.png',
+                plt.savefig(f'{self.out_folder}/a.{self.star.starname}.CORNER.png',
                             bbox_inches='tight')
         pass
 

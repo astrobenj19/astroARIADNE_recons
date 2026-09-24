@@ -344,7 +344,7 @@ class Fitter:
             self.out_folder = self.star.starname + '/'
         create_dir(self.out_folder)
 
-        self.star.save_mags(self.out_folder + '/')
+        self.star.save_mags(f'{self.out_folder}/a.{self.star.starname}.')
 
         # Parameter coordination.
         # Order for the parameters are:
@@ -582,7 +582,7 @@ class Fitter:
                     prior_out += k + '\tuniform\t{}\t{}\n'.format(low, up)
         for par in noise:
             prior_dict[par] = self.default_priors[par]
-        ff = open(self.out_folder + '/prior.dat', 'w')
+        ff = open(f'{self.out_folder}/a.{self.star.starname}.prior.dat', 'w')
         ff.write(prior_out)
         ff.close()
         del ff
@@ -769,12 +769,12 @@ class Fitter:
         for intp, gr in zip(self._interpolators, self._grids):
             interpolator = intp
             self.grid = gr
-            out_file = self.out_folder + '/' + gr + '_out.pkl'
+            out_file = f'{self.out_folder}/a.{self.star.starname}.{gr}_out.pkl'
             print('\t\t\tFITTING MODEL : ' + gr)
             try:
                 self.fit_dynesty(out_file=out_file)
             except ValueError as e:
-                dump_out = self.out_folder + '/' + gr + '_DUMP.pkl'
+                dump_out = f'{self.out_folder}/a.{self.star.starname}.{gr}_DUMP.pkl'
                 pickle.dump(self.sampler.results, open(dump_out, 'wb'))
                 DynestyError(dump_out, gr, e).__raise__()
                 continue
@@ -783,7 +783,7 @@ class Fitter:
         # the posteriors
         outs = []
         for g in self._grids:
-            in_folder = f'{self.out_folder}/{g}_out.pkl'
+            in_folder = f'{self.out_folder}/a.{self.star.starname}.{g}_out.pkl'
             outs.append(in_folder)
             # with open(in_folder, 'rb') as out:
             #     outs.append(pickle.load(out))
@@ -794,7 +794,8 @@ class Fitter:
 
         elapsed_time = execution_time(self.start)
         end(self.coordinator, elapsed_time, self.out_folder,
-            'Bayesian Model Averaging', self.norm)
+            'Bayesian Model Averaging', self.norm,
+            starname=self.star.starname)
         pass
 
     def _bma_dynesty(self, intp, grid):
@@ -1168,7 +1169,7 @@ class Fitter:
         out = dict()
         logdat_samples = '#Parameter\tmedian\tupper\tlower\t3sig_low\t3sig_up\n'
         logdat_average = '#Parameter\tmedian\tupper\tlower\t3sig_low\t3sig_up\n'
-        log_out_samples = f'{self.out_folder}/best_fit_sample.dat'
+        log_out_samples = f'{self.out_folder}/a.{self.star.starname}.best_fit_sample.dat'
         log_out_average = f'{self.out_folder}/a.{self.star.starname}.best_fit_average.dat'
         prob_out = f'{self.out_folder}/a.{self.star.starname}.model_probabilities.dat'
         synth_out = f'{self.out_folder}/a.{self.star.starname}.synthetic_fluxes.dat'
@@ -1457,7 +1458,7 @@ class Fitter:
             abs(mamajek_temp - out['best_fit_averaged']['teff']))
         spt = mamajek_spt[spt_idx]
         out['spectral_type'] = spt
-        out_file = f'{self.out_folder}/BMA.pkl'
+        out_file = f'{self.out_folder}/a.{self.star.starname}.BMA.pkl'
         with open(log_out_samples, 'w') as logfile:
             logfile.write(logdat_samples)
         with open(log_out_average, 'w') as logfile:
