@@ -13,7 +13,7 @@ def make_plots(starname):
     out_folder = '{}_output'.format(starname)
 
 
-    in_file = out_folder + '/BMA.pkl'
+    in_file = '{}/a.{}.BMA.pkl'.format(out_folder, starname)
     plots_out_folder = out_folder+'/plots'
 
     artist = SEDPlotter(in_file, plots_out_folder)

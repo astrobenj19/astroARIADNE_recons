@@ -10,9 +10,9 @@ Usage:
 Example:
     python ariadne_batch_fit.py \\
         --csv-path photometry.csv \\
-        --nlive 50 \\
+        --nlive 1000 \\
         --n-samples 1000 \\
-        --dlogz 0.999 \\
+        --dlogz 0.5 \\
         --threads 48 \\
         --plot-sed \\
         --plot-corner \\
@@ -29,9 +29,16 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
+# Must be set before importing astroARIADNE: config.py reads this env var at
+# import time, so setting it later has no effect on the already-bound value.
+_DEFAULT_MODELS_DIR = "/Volumes/HD_sebas_recons/ARIADNE/Models_Dir/"
+if "ARIADNE_MODELS" not in os.environ and os.path.isdir(_DEFAULT_MODELS_DIR):
+    os.environ["ARIADNE_MODELS"] = _DEFAULT_MODELS_DIR
+
 from astroARIADNE.star import Star
 from astroARIADNE.fitter import Fitter
 from astroARIADNE.plotter import SEDPlotter
+from astroARIADNE.calc_fbol import do_fbol
 
 
 # Photometric bands configuration
@@ -103,20 +110,21 @@ Examples:
     parser.add_argument(
         "--nlive",
         type=int,
-        default=50,
-        help="Number of live points for dynesty (default: 50). Increase for better accuracy.",
+        default=1000,
+        help="Number of live points for dynesty (default: 1000 -- reported to give "
+        "robust, converged posteriors). Increase for better accuracy.",
     )
     parser.add_argument(
         "--n-samples",
         type=int,
-        default=1000,
-        help="Number of samples for posterior estimation (default: 1000)",
+        default=100000,
+        help="Number of samples for posterior estimation (default: 100000)",
     )
     parser.add_argument(
         "--dlogz",
         type=float,
-        default=0.999,
-        help="Log evidence tolerance for dynesty (default: 0.999). Smaller = more accurate.",
+        default=0.5,
+        help="Log evidence tolerance for dynesty (default: 0.5). Smaller = more accurate.",
     )
 
     # Data selection
@@ -156,6 +164,9 @@ Examples:
         "--plot-corner", action="store_true", help="Plot corner diagram"
     )
     parser.add_argument(
+        "--plot-fbol", action="store_true", help="Compute and plot Fbol"
+    )
+    parser.add_argument(
         "--plot-all", action="store_true", help="Enable all plotting options"
     )
 
@@ -173,6 +184,12 @@ Examples:
         type=float,
         default=0.0,
         help="Fixed extinction Av value (default: 0.0)",
+    )
+    parser.add_argument(
+        "--fix-dist",
+        action="store_true",
+        help="Fix distance to 1000/parallax (pc) instead of using the default "
+        "distance prior. Parallax is read from the 'pi' column (mas).",
     )
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
 
@@ -229,7 +246,7 @@ def process_target(target, row, args):
             plx=plx,
             plx_e=plx_e,
             Av=args.av_fixed,
-            Av_e=0.0,
+            Av_e=None,
             offline=True,
             mag_dict=mag_dict,
             verbose=args.verbose,
@@ -255,12 +272,14 @@ def process_target(target, row, args):
         f.models = args.models
         f.n_samples = args.n_samples
 
+        dist_prior = ("fixed", 1000.0 / plx) if args.fix_dist else ("default")
+
         f.prior_setup = {
-            "teff": ("default"),
-            "logg": ("default"),
-            "z": ("default"),
-            "dist": ("default"),
-            "rad": ("default"),
+            "teff": ("uniform", 3000, 6000),
+            "logg": ("uniform", 3.5, 5.5),
+            "z": ("uniform", -1, 0.25),
+            "dist": dist_prior,
+            "rad": ("uniform", 0.05, 2),
             "Av": ("fixed", args.av_fixed),
         }
 
@@ -270,6 +289,8 @@ def process_target(target, row, args):
         print(f"  n_samples: {args.n_samples}")
         print(f"  dlogz: {args.dlogz}")
         print(f"  models: {', '.join(args.models)}")
+        print(f"  dist prior: {dist_prior}")
+        print(f"  Av prior: {f.prior_setup['Av']}")
         print(f"  threads: {args.threads}")
 
         # Run fitting
@@ -294,15 +315,9 @@ def process_target(target, row, args):
         ]
     ):
         try:
-            in_file = os.path.join(out_folder, "BMA.pkl")
+            in_file = os.path.join(out_folder, f"a.{target}.BMA.pkl")
             plots_out_folder = os.path.join(out_folder, "plots")
             os.makedirs(plots_out_folder, exist_ok=True)
-
-            # Set ARIADNE_MODELS environment variable
-            model_dir = str(SCRIPT_DIR)
-            if not os.path.isdir(model_dir):
-                print(f"[WARNING] ARIADNE models directory not found: {model_dir}")
-            os.environ["ARIADNE_MODELS"] = model_dir
 
             artist = SEDPlotter(in_file, plots_out_folder, model="phoenix")
 
@@ -326,6 +341,14 @@ def process_target(target, row, args):
 
         except Exception as e:
             print(f"[WARNING] Plotting failed: {e}")
+
+    if args.plot_fbol or args.plot_all:
+        try:
+            print("  Computing and plotting Fbol...")
+            do_fbol(str(target), out_dir=out_folder)
+            print(f"[OK] Fbol report and plots saved to: {out_folder}")
+        except Exception as e:
+            print(f"[WARNING] Fbol plotting failed: {e}")
 
     return True
 
